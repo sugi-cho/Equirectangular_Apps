@@ -9,13 +9,9 @@ npm install
 npm run dev
 ```
 
-## EXE 作成
+## ワンクリック起動
 
-```powershell
-npm run dist:win
-```
-
-`release/` に単体起動の portable exe が出ます。
+`start-webapp.bat` を実行すると、必要なら Node.js を入れてから依存を導入し、Web アプリを起動してブラウザで開きます。
 
 ## 主な機能
 
