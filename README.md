@@ -1,6 +1,6 @@
-# Equirectangular Storyboard Web
+# Equirectangular Editor
 
-Equirectangular の絵コンテ編集ツール。
+Equirectangular の編集ツール。
 
 ## 起動
 

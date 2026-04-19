@@ -18,7 +18,7 @@ export type RecentProjectEntry = {
   lastOpenedAt: number;
 };
 
-const DB_NAME = "equirectangular-storyboard-web";
+const DB_NAME = "equirectangular-editor";
 const DB_VERSION = 1;
 const STORE_NAME = "recent-projects";
 

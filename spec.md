@@ -1,4 +1,4 @@
-# Equirectangular Storyboard Web Spec
+# Equirectangular Editor Spec
 
 ## 目的
 
@@ -97,4 +97,3 @@
 5. ドームサイズを変更できる
 6. カメラ位置を動かせる
 7. Three.js の VR プレビューで結果を確認できる
-
