@@ -1,13 +1,19 @@
 {
   "name": "equirectangular-storyboard-web",
+  "description": "Equirectangular editing and VR preview tool",
+  "author": "sugi-cho",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
+    "dev:renderer": "vite",
+    "dev:electron": "electron .",
+    "dev": "concurrently -k \"npm run dev:renderer\" \"wait-on http://127.0.0.1:5173 && npm run dev:electron\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dist:win": "npm run build && electron-builder --win portable"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -20,8 +26,38 @@
     "@types/react-dom": "^19.1.9",
     "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^5.0.2",
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.1",
+    "electron-builder": "^26.8.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.sugi-cho.equirectangulareditor",
+    "productName": "Equirectangular Editor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json",
+      "README.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Equirectangular_Editor-${version}-portable.${ext}"
+    }
   }
 }

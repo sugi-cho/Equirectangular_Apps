@@ -9,6 +9,14 @@ npm install
 npm run dev
 ```
 
+## EXE 作成
+
+```powershell
+npm run dist:win
+```
+
+`release/` に単体起動の portable exe が出ます。
+
 ## 主な機能
 
 - 2D 画像の配置、回転、距離調整

@@ -1,5 +1,6 @@
 node_modules/
 dist/
+release/
 *.tsbuildinfo
 vite.config.d.ts
 coverage/
