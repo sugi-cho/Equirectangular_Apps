@@ -64,15 +64,22 @@ export const ThreePreview = forwardRef<ThreePreviewHandle, Props>(function Three
       const renderer = rendererRef.current;
       const xr = (navigator as Navigator & { xr?: WebXRSystemLike }).xr;
       if (!renderer || !xr) {
+        window.alert("この環境では WebXR が利用できません。");
         return false;
       }
 
-      const session = await xr.requestSession("immersive-vr", {
-        optionalFeatures: ["local-floor", "bounded-floor"],
-      });
-      renderer.xr.enabled = true;
-      await renderer.xr.setSession(session as never);
-      return true;
+      try {
+        const session = await xr.requestSession("immersive-vr", {
+          optionalFeatures: ["local-floor", "bounded-floor"],
+        });
+        renderer.xr.enabled = true;
+        await renderer.xr.setSession(session as never);
+        return true;
+      } catch (error) {
+        console.error(error);
+        window.alert("VR セッションを開始できませんでした。");
+        return false;
+      }
     },
   }));
 
