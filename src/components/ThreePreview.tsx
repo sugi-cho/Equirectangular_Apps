@@ -63,12 +63,20 @@ export const ThreePreview = forwardRef<ThreePreviewHandle, Props>(function Three
     async enterVr() {
       const renderer = rendererRef.current;
       const xr = (navigator as Navigator & { xr?: WebXRSystemLike }).xr;
+      const secure = window.isSecureContext;
       if (!renderer || !xr) {
-        window.alert("この環境では WebXR が利用できません。");
+        window.alert(
+          `WebXR が利用できません。\nsecureContext=${secure}\nnavigator.xr=${Boolean(xr)}`,
+        );
         return false;
       }
 
       try {
+        const supported = await xr.isSessionSupported?.("immersive-vr");
+        if (supported === false) {
+          window.alert(`immersive-vr が未対応です。\nsecureContext=${secure}`);
+          return false;
+        }
         const session = await xr.requestSession("immersive-vr", {
           optionalFeatures: ["local-floor", "bounded-floor"],
         });
@@ -77,7 +85,8 @@ export const ThreePreview = forwardRef<ThreePreviewHandle, Props>(function Three
         return true;
       } catch (error) {
         console.error(error);
-        window.alert("VR セッションを開始できませんでした。");
+        const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+        window.alert(`VR セッションを開始できませんでした。\n${message}`);
         return false;
       }
     },
@@ -410,6 +419,7 @@ function domRemove(parent: HTMLElement, child: HTMLElement) {
 }
 
 type WebXRSystemLike = {
+  isSessionSupported?: (mode: "immersive-vr") => Promise<boolean>;
   requestSession: (
     mode: "immersive-vr",
     options?: { optionalFeatures?: string[] },
