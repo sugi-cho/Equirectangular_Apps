@@ -4,6 +4,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 app.commandLine.appendSwitch("enable-features", "WebXR");
+app.commandLine.appendSwitch("force-webxr-runtime", "openxr");
 
 const isDev = !app.isPackaged;
 const devUrl = "http://127.0.0.1:5173";
