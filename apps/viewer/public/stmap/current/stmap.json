@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "revision": "R0_S00_00_Template_STMap_24k.exr:24576x12288:2026-04-22T06:16:34.729238+00:00",
+  "source": {
+    "fileName": "R0_S00_00_Template_STMap_24k.exr",
+    "width": 24576,
+    "height": 12288
+  },
+  "crop": {
+    "x": 9929,
+    "y": 4168,
+    "width": 4718,
+    "height": 2071
+  },
+  "cropUv": {
+    "x": 0.4040120442708333,
+    "y": 0.3391927083333333,
+    "width": 0.19197591145833334,
+    "height": 0.16853841145833334
+  },
+  "format": {
+    "channels": "rg",
+    "encoding": "float16"
+  },
+  "files": {
+    "pixels": "pixels.bin",
+    "mask": "mask.bin"
+  }
+}
