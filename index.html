@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equirectangular Apps</title>
+    <meta
+      name="description"
+      content="Equirectangular editor と viewer の入口ページ"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #111a33;
+        --text: #e8ecff;
+        --muted: #a6b0d6;
+        --accent: #8ab4ff;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #17224a 0%, var(--bg) 60%);
+        color: var(--text);
+      }
+
+      main {
+        width: min(720px, calc(100vw - 32px));
+        padding: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px;
+        background: rgba(17, 26, 51, 0.88);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+      }
+
+      .links {
+        display: grid;
+        gap: 12px;
+      }
+
+      a {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 18px;
+        border-radius: 14px;
+        color: var(--text);
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      a span:last-child {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Equirectangular Apps</h1>
+      <div class="links">
+        <a href="./editor/"><span>Editor</span></a>
+        <a href="./viewer/"><span>Viewer</span></a>
+      </div>
+    </main>
+  </body>
+  </html>

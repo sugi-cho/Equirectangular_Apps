@@ -7,6 +7,10 @@ const rootDir = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   base: "./",
+  build: {
+    emptyOutDir: true,
+    outDir: resolve(rootDir, "..", "..", "dist", "viewer"),
+  },
   plugins: [react()],
   server: {
     fs: {

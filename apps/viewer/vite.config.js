@@ -5,6 +5,10 @@ import react from "@vitejs/plugin-react";
 var rootDir = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
     base: "./",
+    build: {
+        emptyOutDir: true,
+        outDir: resolve(rootDir, "..", "..", "dist", "viewer"),
+    },
     plugins: [react()],
     server: {
         fs: {
