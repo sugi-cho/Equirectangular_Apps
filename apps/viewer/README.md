@@ -19,7 +19,7 @@ npm run dev
 ## STMap 更新
 
 ```powershell
-npm run stmap:build -- --input ..\..\..\STmap_and_Projection_Project\R0_S00_00_Template_STMap_24k.exr
+npm run stmap:build -- --input <Your_STMap.exr>
 ```
 
 生成物は `public/stmap/current/` の固定ファイルを差し替えます。
