@@ -1,7 +1,7 @@
 import type { StoryboardScene } from "./types";
 
 export const defaultScene: StoryboardScene = {
-  guideImageUrl: "/equirectangular_guide_2x1.png",
+  guideImageUrl: "./equirectangular_guide_2x1.png",
   backgroundImageUrl: "",
   dome: {
     radius: 527,

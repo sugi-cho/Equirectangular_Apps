@@ -377,7 +377,10 @@ export default function App() {
           <button type="button" onClick={() => setRecentMenuOpen((current) => !current)}>
             Recent
           </button>
-          <button type="button" onClick={() => window.location.assign("/viewer")}>
+          <button
+            type="button"
+            onClick={() => window.location.assign(new URL("../viewer/", window.location.href).toString())}
+          >
             Viewer
           </button>
           {recentMenuOpen ? (

@@ -328,7 +328,10 @@ export default function App() {
           <button type="button" onClick={handleReset}>
             Reset
           </button>
-          <button type="button" onClick={() => window.location.assign("/editor")}>
+          <button
+            type="button"
+            onClick={() => window.location.assign(new URL("../editor/", window.location.href).toString())}
+          >
             Editor
           </button>
         </div>
