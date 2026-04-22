@@ -25,6 +25,10 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install viewer deps
+        working-directory: apps/viewer
+        run: npm ci
+
       - name: Install editor deps
         working-directory: apps/editor
         run: npm ci
@@ -32,10 +36,6 @@ jobs:
       - name: Build editor
         working-directory: apps/editor
         run: npm run build
-
-      - name: Install viewer deps
-        working-directory: apps/viewer
-        run: npm ci
 
       - name: Build viewer
         working-directory: apps/viewer
