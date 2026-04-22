@@ -15,7 +15,7 @@ import {
 } from "three";
 import { panoramaFrontRotationY } from "../../../shared/src/projection-math";
 import {
-  createContainedImageTexture,
+  createStretchedImageTexture,
   createStMapOverlayMaterial,
   disposeStMapBundle,
   loadCurrentStMap,
@@ -231,7 +231,7 @@ export const ThreeViewer = forwardRef<ThreeViewerHandle, Props>(function ThreeVi
     if (stmapSourceKind === "image" && stmapSourceUrl) {
       const texture = textureLoader.load(stmapSourceUrl, () => {
         const image = texture.image as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
-        const containedTexture = createContainedImageTexture(
+        const containedTexture = createStretchedImageTexture(
           texture.image,
           image.naturalWidth ?? image.width ?? 1,
           image.naturalHeight ?? image.height ?? 1,

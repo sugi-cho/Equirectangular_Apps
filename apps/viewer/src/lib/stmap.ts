@@ -115,7 +115,7 @@ export function createStMapOverlayMaterial(options: CreateStMapOverlayMaterialOp
   });
 }
 
-export function createContainedImageTexture(
+export function createStretchedImageTexture(
   image: CanvasImageSource,
   sourceWidth: number,
   sourceHeight: number,
@@ -128,16 +128,9 @@ export function createContainedImageTexture(
     throw new Error("Failed to create 2D canvas context for STMap source.");
   }
 
-  const width = Math.max(1, sourceWidth);
-  const height = Math.max(1, sourceHeight);
-  const scale = Math.min(canvas.width / width, canvas.height / height);
-  const drawWidth = width * scale;
-  const drawHeight = height * scale;
-  const offsetX = (canvas.width - drawWidth) * 0.5;
-  const offsetY = (canvas.height - drawHeight) * 0.5;
-
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  // STMap preview と同じく、元メディアは UV 全体に合わせて引き延ばす。
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
   const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;

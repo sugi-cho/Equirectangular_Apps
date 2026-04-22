@@ -12,7 +12,7 @@ import {
   WebGLRenderer,
 } from "three";
 import {
-  createContainedImageTexture,
+  createStretchedImageTexture,
   createStMapOverlayMaterial,
   disposeStMapBundle,
   loadCurrentStMap,
@@ -113,7 +113,7 @@ export function StMapOverlayPreview({ sourceKind, sourceUrl, videoElement, onSta
     if (sourceKind === "image" && sourceUrl) {
       const texture = textureLoader.load(sourceUrl, () => {
         const image = texture.image as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
-        const containedTexture = createContainedImageTexture(
+        const containedTexture = createStretchedImageTexture(
           texture.image,
           image.naturalWidth ?? image.width ?? 1,
           image.naturalHeight ?? image.height ?? 1,
