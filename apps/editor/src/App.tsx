@@ -5,7 +5,7 @@ import { EquirectangularEditor } from "./components/EquirectangularEditor";
 import { ProjectionPreview } from "./components/ProjectionPreview";
 import { ThreePreview, type ThreePreviewHandle } from "./components/ThreePreview";
 import { addLayer, setVec3Value, updateLayer } from "./lib/scene";
-import { defaultScene } from "./lib/defaultScene";
+import { defaultGuideImageUrl, defaultScene } from "./lib/defaultScene";
 import { serializeProject } from "./lib/project-file";
 import {
   listRecentProjects,
@@ -319,6 +319,13 @@ export default function App() {
     });
   };
 
+  const handleResetGuide = () => {
+    setScene((current) => ({
+      ...current,
+      guideImageUrl: defaultGuideImageUrl,
+    }));
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -360,6 +367,9 @@ export default function App() {
           />
           <button type="button" onClick={() => guideInputRef.current?.click()}>
             ガイド読み込み
+          </button>
+          <button type="button" onClick={handleResetGuide}>
+            ガイドをデフォルトへ戻す
           </button>
           <button type="button" onClick={() => backgroundInputRef.current?.click()}>
             背景読み込み
