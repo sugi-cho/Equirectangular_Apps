@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeBillboardBasis,
   computeLayerWorldPosition,
+  getLayerDistance,
   directionToEquirectUv,
   equirectUvToDirection,
 } from "./projection-math";
@@ -32,5 +33,11 @@ describe("projection math", () => {
     expect(Math.abs(basis.normal[2])).toBeCloseTo(1, 5);
     expect(basis.right[1]).toBeCloseTo(0, 5);
     expect(basis.up[0]).toBeCloseTo(0, 5);
+  });
+
+  it("keeps layer distance as a plain positive value", () => {
+    expect(getLayerDistance(6)).toBe(6);
+    expect(getLayerDistance(13.3)).toBe(13.3);
+    expect(getLayerDistance(20)).toBe(20);
   });
 });

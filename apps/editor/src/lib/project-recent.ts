@@ -19,8 +19,9 @@ export type RecentProjectEntry = {
 };
 
 const DB_NAME = "equirectangular-editor";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "recent-projects";
+const DIRECTORY_STORE_NAME = "project-directory";
 
 export async function listRecentProjects() {
   const db = await openDatabase();
@@ -54,6 +55,26 @@ export async function upsertRecentProject(params: {
   return entry;
 }
 
+export async function saveProjectDirectoryHandle(handle: FileSystemDirectoryHandle | null) {
+  const db = await openDatabase();
+  const transaction = db.transaction(DIRECTORY_STORE_NAME, "readwrite");
+  const store = transaction.objectStore(DIRECTORY_STORE_NAME);
+  await requestToPromise(store.put({ id: "last-directory", handle }));
+  await transactionDone(transaction);
+  db.close();
+}
+
+export async function loadProjectDirectoryHandle() {
+  const db = await openDatabase();
+  const transaction = db.transaction(DIRECTORY_STORE_NAME, "readonly");
+  const store = transaction.objectStore(DIRECTORY_STORE_NAME);
+  const entry = await requestToPromise<{ id: string; handle: FileSystemDirectoryHandle | null } | undefined>(
+    store.get("last-directory"),
+  );
+  db.close();
+  return entry?.handle ?? null;
+}
+
 export async function loadProjectFromRecent(entry: RecentProjectEntry) {
   if (entry.handle) {
     try {
@@ -74,6 +95,9 @@ async function openDatabase() {
     const db = request.result;
     if (!db.objectStoreNames.contains(STORE_NAME)) {
       db.createObjectStore(STORE_NAME, { keyPath: "id" });
+    }
+    if (!db.objectStoreNames.contains(DIRECTORY_STORE_NAME)) {
+      db.createObjectStore(DIRECTORY_STORE_NAME, { keyPath: "id" });
     }
   };
   return requestToPromise<IDBDatabase>(request);

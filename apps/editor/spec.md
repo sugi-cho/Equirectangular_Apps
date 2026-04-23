@@ -59,9 +59,9 @@
 - 天球ドームの大きさを設定できる
 - 既定値は `STmap_and_Projection_Project/Projection_Previewer.nk` から持ってくる
 - 既定の参照値:
-  - Sphere radius: `527`
-  - Sphere scaling: `{1 0.85 1}`
-  - Geometry translate: `{0 0 -129.92}`
+  - Sphere radius: `13.3`
+  - Sphere scaling: `{1 1 1}`
+  - Geometry translate: `{0 0 0}`
 
 ## カメラ
 

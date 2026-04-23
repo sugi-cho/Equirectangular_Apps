@@ -41,5 +41,5 @@ export function createLayerName(index: number) {
 }
 
 export function estimateLayerPreviewSize(layer: StoryboardLayer) {
-  return clamp((160 * layer.scale) / Math.max(layer.distance, 0.2), 40, 220);
+  return clamp((800 * layer.scale) / Math.max(layer.distance, 0.2), 40, 600);
 }

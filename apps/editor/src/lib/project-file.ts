@@ -1,5 +1,7 @@
 import type { StoryboardLayer, StoryboardScene, Vec3 } from "./types";
 import { createEmptyLayer } from "./scene";
+import { defaultGuideImageUrl } from "./defaultScene";
+import { normalizeAssetPath } from "./asset-url";
 
 export const PROJECT_FILE_VERSION = 1;
 
@@ -11,7 +13,7 @@ type ProjectFileV1 = {
 export function serializeProject(scene: StoryboardScene) {
   const document: ProjectFileV1 = {
     version: PROJECT_FILE_VERSION,
-    scene,
+    scene: normalizeScene(scene),
   };
   return JSON.stringify(document, null, 2);
 }
@@ -41,12 +43,12 @@ function extractScene(value: unknown): StoryboardScene {
 
 function normalizeScene(scene: StoryboardScene) {
   return {
-    guideImageUrl: scene.guideImageUrl ?? "",
-    backgroundImageUrl: scene.backgroundImageUrl ?? "",
+    guideImageUrl: normalizeGuideImageUrl(scene.guideImageUrl),
+    backgroundImageUrl: normalizeAssetPath(String(scene.backgroundImageUrl ?? "")),
     dome: {
-      radius: Number(scene.dome?.radius ?? 527),
-      scale: normalizeVec3(scene.dome?.scale, [1, 0.85, 1]),
-      translate: normalizeVec3(scene.dome?.translate, [0, 0, -129.92]),
+      radius: Number(scene.dome?.radius ?? 13.3),
+      scale: normalizeVec3(scene.dome?.scale, [1, 1, 1]),
+      translate: normalizeVec3(scene.dome?.translate, [0, 0, 0]),
     },
     camera: {
       position: normalizeVec3(scene.camera?.position, [0, 0, 0]),
@@ -67,7 +69,7 @@ function normalizeLayer(layer: StoryboardLayer, index: number) {
   return {
     id: String(layer.id ?? `layer-${index + 1}`),
     name: String(layer.name ?? `Layer ${index + 1}`),
-    imageUrl: String(layer.imageUrl ?? ""),
+    imageUrl: normalizeAssetPath(String(layer.imageUrl ?? "")),
     imageName: layer.imageName ? String(layer.imageName) : undefined,
     imageAspect: Number(layer.imageAspect ?? 1),
     latitude: Number(layer.latitude ?? 0),
@@ -89,4 +91,9 @@ function normalizeVec3(value: Vec3 | undefined, fallback: Vec3): Vec3 {
     Number(value[1] ?? fallback[1]),
     Number(value[2] ?? fallback[2]),
   ] as Vec3;
+}
+
+function normalizeGuideImageUrl(value: string | undefined) {
+  const normalized = normalizeAssetPath(String(value ?? ""));
+  return normalized === normalizeAssetPath(defaultGuideImageUrl) ? "" : normalized;
 }

@@ -16,6 +16,7 @@ import {
 } from "three";
 import {
   computeLayerRenderSize,
+  getLayerDistance,
   computeLayerWorldPosition,
   panoramaFrontRotationY,
 } from "../lib/projection-math";
@@ -226,7 +227,8 @@ export const ThreePreview = forwardRef<ThreePreviewHandle, Props>(function Three
           return;
         }
 
-        const radius = Math.max(0.1, visibleRadius - layer.distance);
+        const radius = getLayerDistance(layer.distance);
+
         const [x, y, z] = computeLayerWorldPosition(layer.latitude, layer.longitude, radius);
         item.mesh.position.set(x + domeTranslate[0], y + domeTranslate[1], z + domeTranslate[2]);
         item.mesh.lookAt(currentCamera.position);
@@ -235,7 +237,7 @@ export const ThreePreview = forwardRef<ThreePreviewHandle, Props>(function Three
         const aspect = Math.max(0.1, layer.imageAspect ?? 1);
         item.mesh.scale.set(size * aspect, size, 1);
         item.mesh.visible = layer.visible;
-        item.mesh.renderOrder = order + 1;
+        item.mesh.renderOrder = 1000 + order;
         item.material.color.set(layer.id === activeLayerIdRef.current ? 0xd9e4ff : 0xffffff);
       });
 

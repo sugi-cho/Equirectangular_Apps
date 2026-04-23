@@ -172,6 +172,42 @@ h1 {
   gap: 12px;
 }
 
+.collapsible-header {
+  width: 100%;
+}
+
+.panel-header-button {
+  flex: 1;
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border-radius: 0;
+}
+
+.panel-header-button:hover {
+  background: transparent;
+}
+
+.panel-heading-copy h2 {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.panel-disclosure {
+  display: inline-block;
+  margin-right: 0.15em;
+  font-size: 0.82em;
+  color: #d9e4ff;
+}
+
+.collapsible-body {
+  display: grid;
+  gap: 14px;
+}
+
 .panel-actions {
   display: flex;
   gap: 10px;
@@ -406,6 +442,18 @@ input {
   gap: 8px;
 }
 
+.layer-row-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.layer-row-shell.active .layer-row {
+  background: rgba(217, 228, 255, 0.15);
+  border: 1px solid rgba(217, 228, 255, 0.25);
+}
+
 .layer-row {
   display: grid;
   gap: 4px;
@@ -413,9 +461,16 @@ input {
   padding: 12px 14px;
 }
 
-.layer-row.active {
-  background: rgba(217, 228, 255, 0.15);
-  border: 1px solid rgba(217, 228, 255, 0.25);
+.layer-delete {
+  align-self: stretch;
+  padding-inline: 0.85rem;
+  white-space: nowrap;
+  background: rgba(255, 96, 96, 0.14);
+  border: 1px solid rgba(255, 96, 96, 0.22);
+}
+
+.layer-delete:hover {
+  background: rgba(255, 96, 96, 0.22);
 }
 
 .route-error {

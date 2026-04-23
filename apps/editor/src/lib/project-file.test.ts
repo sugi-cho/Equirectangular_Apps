@@ -16,4 +16,23 @@ describe("project file", () => {
     const next = parseProject(JSON.stringify(defaultScene));
     expect(next.camera.position).toEqual(defaultScene.camera.position);
   });
+
+  it("keeps relative asset paths and hides the default guide", () => {
+    const scene = {
+      ...defaultScene,
+      guideImageUrl: "./equirectangular_guide_2k1k.png",
+      backgroundImageUrl: "assets/background.png",
+      layers: [
+        {
+          ...defaultScene.layers[0]!,
+          imageUrl: "assets/layer-a.png",
+        },
+      ],
+    };
+
+    const next = parseProject(serializeProject(scene));
+    expect(next.guideImageUrl).toBe("");
+    expect(next.backgroundImageUrl).toBe("assets/background.png");
+    expect(next.layers[0]?.imageUrl).toBe("assets/layer-a.png");
+  });
 });

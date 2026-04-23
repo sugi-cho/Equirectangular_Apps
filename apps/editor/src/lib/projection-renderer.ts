@@ -3,6 +3,7 @@ import {
   addVec3,
   computeBillboardBasis,
   computeLayerRenderSize,
+  getLayerDistance,
   computeLayerWorldPosition,
   crossVec3,
   directionToEquirectUv,
@@ -91,7 +92,7 @@ async function renderProjectionIntoCanvas(
 
   for (const layer of sortedLayers) {
     const image = await loadImageData(layer.imageUrl);
-    const plane = buildLayerPlane(layer, scene.camera.position, scene.dome.radius);
+    const plane = buildLayerPlane(layer, scene.camera.position);
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const direction = equirectUvToDirection((x + 0.5) / width, (y + 0.5) / height);
@@ -130,8 +131,12 @@ function ensureCanvasSize(canvas: HTMLCanvasElement) {
   return width;
 }
 
-function buildLayerPlane(layer: StoryboardLayer, cameraPosition: Vec3, sphereRadius: number): LayerPlane {
-  const center = computeLayerWorldPosition(layer.latitude, layer.longitude, sphereRadius - layer.distance);
+function buildLayerPlane(
+  layer: StoryboardLayer,
+  cameraPosition: Vec3,
+): LayerPlane {
+  const distance = getLayerDistance(layer.distance);
+  const center = computeLayerWorldPosition(layer.latitude, layer.longitude, distance);
   const { right, up } = computeBillboardBasis(center, cameraPosition, layer.rotation);
   const size = computeLayerRenderSize(layer);
   const aspect = Math.max(0.1, layer.imageAspect ?? 1);

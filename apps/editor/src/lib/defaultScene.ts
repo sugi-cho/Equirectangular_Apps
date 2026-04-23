@@ -3,12 +3,12 @@ import type { StoryboardScene } from "./types";
 export const defaultGuideImageUrl = "./equirectangular_guide_2k1k.png";
 
 export const defaultScene: StoryboardScene = {
-  guideImageUrl: defaultGuideImageUrl,
+  guideImageUrl: "",
   backgroundImageUrl: "",
   dome: {
-    radius: 527,
-    scale: [1, 0.85, 1],
-    translate: [0, 0, -129.92],
+    radius: 13.3,
+    scale: [1, 1, 1],
+    translate: [0, 0, 0],
   },
   camera: {
     position: [0, 0, 0],

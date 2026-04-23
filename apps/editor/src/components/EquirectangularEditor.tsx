@@ -1,4 +1,4 @@
-import type { PointerEvent, WheelEvent } from "react";
+import type { DragEvent, PointerEvent, WheelEvent } from "react";
 import { estimateLayerPreviewSize, screenPointToLatitudeLongitude } from "../lib/geometry";
 import type { StoryboardLayer } from "../lib/types";
 
@@ -9,6 +9,7 @@ type Props = {
   activeLayerId: string;
   onSelectLayer: (id: string) => void;
   onUpdateLayer: (id: string, patch: Partial<StoryboardLayer>) => void;
+  onDropImageFile?: (file: File) => void;
   interactive?: boolean;
 };
 
@@ -19,6 +20,7 @@ export function EquirectangularEditor({
   activeLayerId,
   onSelectLayer,
   onUpdateLayer,
+  onDropImageFile,
   interactive = true,
 }: Props) {
   const handleLayerPointerDown = (
@@ -76,8 +78,33 @@ export function EquirectangularEditor({
     });
   };
 
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (!interactive || !onDropImageFile) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length !== 1) {
+      return;
+    }
+
+    const [file] = files;
+    if (!file || !file.type.startsWith("image/")) {
+      return;
+    }
+
+    onDropImageFile(file);
+  };
+
   return (
-    <div className="viewport-stage">
+    <div
+      className="viewport-stage"
+      onDragOver={interactive ? (event) => event.preventDefault() : undefined}
+      onDrop={handleDrop}
+    >
       {backgroundImageUrl ? (
         <img className="stage-image background-image" src={backgroundImageUrl} alt="" />
       ) : null}

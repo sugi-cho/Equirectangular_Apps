@@ -1,11 +1,11 @@
 import "./styles.css";
-import type { ChangeEvent, PointerEvent } from "react";
+import type { ChangeEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EquirectangularEditor } from "./components/EquirectangularEditor";
 import { ProjectionPreview } from "./components/ProjectionPreview";
 import { ThreePreview, type ThreePreviewHandle } from "./components/ThreePreview";
-import { addLayer, setVec3Value, updateLayer } from "./lib/scene";
-import { defaultGuideImageUrl, defaultScene } from "./lib/defaultScene";
+import { addLayer, deleteLayer, setVec3Value, updateLayer } from "./lib/scene";
+import { defaultScene } from "./lib/defaultScene";
 import { serializeProject } from "./lib/project-file";
 import {
   listRecentProjects,
@@ -23,6 +23,9 @@ export default function App() {
   const [recentProjects, setRecentProjects] = useState<RecentProjectEntry[]>([]);
   const [recentMenuOpen, setRecentMenuOpen] = useState(false);
   const [vrGuideVisible, setVrGuideVisible] = useState(true);
+  const [scenePanelOpen, setScenePanelOpen] = useState(true);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(true);
+  const [inspectorPanelOpen, setInspectorPanelOpen] = useState(true);
   const guideInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const openProjectInputRef = useRef<HTMLInputElement | null>(null);
@@ -91,20 +94,47 @@ export default function App() {
     await syncRecentProjects(name, serializeProject(nextScene), handle ?? null);
   };
 
-  const handleFileLoad =
-    (setter: (url: string) => void) => (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) {
-        return;
-      }
-      const input = event.target;
+  const handleGuideFileLoad = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
 
-      void (async () => {
-        const dataUrl = await readFileAsDataUrl(file);
-        setter(dataUrl);
-        input.value = "";
-      })();
-    };
+    void (async () => {
+      try {
+        const image = await loadImageMetadata(file);
+        setScene((current) => ({
+          ...current,
+          guideImageUrl: image.url,
+        }));
+        event.target.value = "";
+      } catch (error) {
+        console.error(error);
+        window.alert("ガイド画像の読み込みに失敗しました。");
+      }
+    })();
+  };
+
+  const handleBackgroundFileLoad = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const image = await loadImageMetadata(file);
+        setScene((current) => ({
+          ...current,
+          backgroundImageUrl: image.url,
+        }));
+        event.target.value = "";
+      } catch (error) {
+        console.error(error);
+        window.alert("背景画像の読み込みに失敗しました。");
+      }
+    })();
+  };
 
   const handleLayerFileLoad =
     (layerId: string) => async (event: ChangeEvent<HTMLInputElement>) => {
@@ -112,18 +142,21 @@ export default function App() {
       if (!file) {
         return;
       }
+      try {
+        const image = await loadImageMetadata(file);
 
-      const oldUrl = scene.layers.find((layer) => layer.id === layerId)?.imageUrl;
-      const image = await loadImageMetadata(file);
-
-      setScene((current) =>
-        updateLayer(current, layerId, {
-          imageUrl: image.url,
-          imageName: file.name,
-          imageAspect: image.aspect,
-        }),
-      );
-      event.target.value = "";
+        setScene((current) =>
+          updateLayer(current, layerId, {
+            imageUrl: image.url,
+            imageName: file.name,
+            imageAspect: image.aspect,
+          }),
+        );
+        event.target.value = "";
+      } catch (error) {
+        console.error(error);
+        window.alert("レイヤー画像の読み込みに失敗しました。");
+      }
     };
 
   const handleAddLayer = () => {
@@ -138,7 +171,55 @@ export default function App() {
     });
   };
 
-  const loadSceneFromFileText = async (text: string, name: string, handle?: ProjectFileHandle | null) => {
+  const handleDeleteLayer = (layerId: string) => {
+    setScene((current) => {
+      const layerIndex = current.layers.findIndex((layer) => layer.id === layerId);
+      if (layerIndex < 0) {
+        return current;
+      }
+
+      const next = deleteLayer(current, layerId);
+      if (next === current) {
+        return current;
+      }
+
+      const nextActiveLayer = next.layers[layerIndex] ?? next.layers[layerIndex - 1] ?? next.layers[0];
+      setActiveLayerId(nextActiveLayer?.id ?? "");
+      return next;
+    });
+  };
+
+  const handleDropImageFile = (file: File) => {
+    void (async () => {
+      try {
+        const image = await loadImageMetadata(file);
+        setScene((current) => {
+          const next = addLayer(current);
+          if (next === current) {
+            return current;
+          }
+
+          const appended = next.layers[next.layers.length - 1];
+          setActiveLayerId(appended.id);
+          return updateLayer(next, appended.id, {
+            imageUrl: image.url,
+            imageName: file.name,
+            imageAspect: image.aspect,
+            scale: getDefaultLayerScale(image.height),
+          });
+        });
+      } catch (error) {
+        console.error(error);
+        window.alert("画像の読み込みに失敗しました。");
+      }
+    })();
+  };
+
+  const loadSceneFromFileText = async (
+    text: string,
+    name: string,
+    handle?: ProjectFileHandle | null,
+  ) => {
     try {
       const nextScene = await loadProjectFromRecent({
         id: name,
@@ -322,9 +403,33 @@ export default function App() {
   const handleResetGuide = () => {
     setScene((current) => ({
       ...current,
-      guideImageUrl: defaultGuideImageUrl,
+      guideImageUrl: "",
     }));
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete" || !activeLayerId) {
+        return;
+      }
+
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      handleDeleteLayer(activeLayerId);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeLayerId]);
 
   return (
     <div className="app-shell">
@@ -346,24 +451,14 @@ export default function App() {
             type="file"
             accept="image/*"
             hidden
-            onChange={handleFileLoad((url) =>
-              setScene((current) => ({
-                ...current,
-                guideImageUrl: url,
-              })),
-            )}
+            onChange={handleGuideFileLoad}
           />
           <input
             ref={backgroundInputRef}
             type="file"
             accept="image/*"
             hidden
-            onChange={handleFileLoad((url) =>
-              setScene((current) => ({
-                ...current,
-                backgroundImageUrl: url,
-              })),
-            )}
+            onChange={handleBackgroundFileLoad}
           />
           <button type="button" onClick={() => guideInputRef.current?.click()}>
             ガイド読み込み
@@ -427,13 +522,14 @@ export default function App() {
               <span className="pill">Interactive</span>
             </div>
 
-            <EquirectangularEditor
+              <EquirectangularEditor
               guideImageUrl={scene.guideImageUrl}
               backgroundImageUrl={scene.backgroundImageUrl}
               layers={scene.layers}
               activeLayerId={activeLayerId}
               onSelectLayer={setActiveLayerId}
               onUpdateLayer={(id, patch) => setScene((current) => updateLayer(current, id, patch))}
+              onDropImageFile={handleDropImageFile}
               interactive
             />
 
@@ -459,14 +555,12 @@ export default function App() {
         </div>
 
         <aside className="side-panel">
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <h2>Scene</h2>
-                <p>ガイド、背景、ドーム、カメラの基本設定。</p>
-              </div>
-            </div>
-
+          <CollapsiblePanel
+            title="Scene"
+            description="ガイド、背景、ドーム、カメラの基本設定。"
+            open={scenePanelOpen}
+            onToggle={() => setScenePanelOpen((current) => !current)}
+          >
             <label>
               Dome radius
               <input
@@ -518,45 +612,52 @@ export default function App() {
                 ))}
               </div>
             </label>
-          </section>
+          </CollapsiblePanel>
 
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <h2>Layers</h2>
-                <p>最大 10 枚の 2D 画像。</p>
-              </div>
+          <CollapsiblePanel
+            title="Layers"
+            description="最大 10 枚の 2D 画像。"
+            open={layersPanelOpen}
+            onToggle={() => setLayersPanelOpen((current) => !current)}
+            action={
               <button type="button" disabled={scene.layers.length >= 10} onClick={handleAddLayer}>
                 Add
               </button>
-            </div>
-
+            }
+          >
             <div className="layer-list">
               {scene.layers.map((layer) => (
-                <button
-                  key={layer.id}
-                  type="button"
-                  className={`layer-row ${layer.id === activeLayerId ? "active" : ""}`}
-                  onClick={() => setActiveLayerId(layer.id)}
-                >
-                  <span>{layer.imageName ?? layer.name}</span>
-                  <small>
-                    lat {layer.latitude.toFixed(1)} / lon {layer.longitude.toFixed(1)} / dist{" "}
-                    {layer.distance.toFixed(1)}
-                  </small>
-                </button>
+                <div key={layer.id} className={`layer-row-shell ${layer.id === activeLayerId ? "active" : ""}`}>
+                  <button
+                    type="button"
+                    className="layer-row"
+                    onClick={() => setActiveLayerId(layer.id)}
+                  >
+                    <span>{layer.imageName ?? layer.name}</span>
+                    <small>
+                      lat {layer.latitude.toFixed(1)} / lon {layer.longitude.toFixed(1)} / dist{" "}
+                      {layer.distance.toFixed(1)}
+                    </small>
+                  </button>
+                  <button
+                    type="button"
+                    className="layer-delete"
+                    onClick={() => handleDeleteLayer(layer.id)}
+                    aria-label={`${layer.name} を削除`}
+                  >
+                    Delete
+                  </button>
+                </div>
               ))}
             </div>
-          </section>
+          </CollapsiblePanel>
 
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <h2>Inspector</h2>
-                <p>選択中レイヤーの配置調整。</p>
-              </div>
-            </div>
-
+          <CollapsiblePanel
+            title="Inspector"
+            description="選択中レイヤーの配置調整。"
+            open={inspectorPanelOpen}
+            onToggle={() => setInspectorPanelOpen((current) => !current)}
+          >
             {activeLayer ? (
               <>
                 <label>
@@ -672,10 +773,10 @@ export default function App() {
             ) : (
               <p className="empty-state">レイヤーがありません。</p>
             )}
-          </section>
+          </CollapsiblePanel>
 
           <section className="panel">
-            <div className="panel-header">
+              <div className="panel-header">
               <div>
                 <h2>VR Preview</h2>
                 <p>Three.js の 3D プレビュー。</p>
@@ -719,8 +820,15 @@ async function loadImageMetadata(file: File) {
   await image.decode();
   return {
     url,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
     aspect: image.naturalWidth / image.naturalHeight,
   };
+}
+
+function getDefaultLayerScale(imageHeight: number) {
+  const referenceHeight = 1024;
+  return Math.max(0.25, Math.min(8, referenceHeight / Math.max(1, imageHeight)));
 }
 
 function readFileAsDataUrl(file: File) {
@@ -730,6 +838,33 @@ function readFileAsDataUrl(file: File) {
     reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
+}
+
+function CollapsiblePanel(props: {
+  title: string;
+  description: string;
+  open: boolean;
+  onToggle: () => void;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`panel collapsible-panel ${props.open ? "open" : "closed"}`}>
+      <div className="panel-header collapsible-header">
+        <button type="button" className="panel-header-button" onClick={props.onToggle}>
+          <div className="panel-heading-copy">
+          <h2>
+            <span className="panel-disclosure">{props.open ? "▼ " : "▶ "}</span>
+            {props.title}
+          </h2>
+          <p>{props.description}</p>
+          </div>
+        </button>
+        {props.action ? <div className="panel-actions">{props.action}</div> : null}
+      </div>
+      {props.open ? <div className="collapsible-body">{props.children}</div> : null}
+    </section>
+  );
 }
 
 function DraggableNumberField(props: {

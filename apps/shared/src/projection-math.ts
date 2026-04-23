@@ -50,7 +50,11 @@ export function computeLayerWorldPosition(
 }
 
 export function computeLayerRenderSize(layer: StoryboardLayer) {
-  return Math.max(0.2, layer.scale * (220 / Math.max(layer.distance, 0.25)));
+  return Math.max(0.2, layer.scale * (27.8 / Math.max(layer.distance, 0.25)));
+}
+
+export function getLayerDistance(distance: number) {
+  return Math.max(0.1, distance);
 }
 
 export function computeBillboardBasis(

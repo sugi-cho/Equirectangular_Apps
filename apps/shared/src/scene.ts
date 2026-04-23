@@ -25,6 +25,18 @@ export function addLayer(scene: StoryboardScene) {
   };
 }
 
+export function deleteLayer(scene: StoryboardScene, layerId: string) {
+  const nextLayers = scene.layers.filter((layer) => layer.id !== layerId);
+  if (nextLayers.length === scene.layers.length) {
+    return scene;
+  }
+
+  return {
+    ...scene,
+    layers: nextLayers,
+  };
+}
+
 export function updateLayer(
   scene: StoryboardScene,
   layerId: string,
