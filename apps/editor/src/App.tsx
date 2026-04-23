@@ -90,12 +90,50 @@ export default function App() {
     snapshot: string,
     handle?: ProjectFileHandle | null,
   ) => {
-    await upsertRecentProject({
-      name,
-      snapshot,
-      handle: handle ?? null,
-    });
-    setRecentProjects(await listRecentProjects());
+    try {
+      await upsertRecentProject({
+        name,
+        snapshot,
+        handle: handle ?? null,
+      });
+      setRecentProjects(await listRecentProjects());
+    } catch (error) {
+      if (handle) {
+        console.error(error);
+        try {
+          await upsertRecentProject({
+            name,
+            snapshot,
+            handle: null,
+          });
+          setRecentProjects(await listRecentProjects());
+          return;
+        } catch (fallbackError) {
+          console.error(fallbackError);
+        }
+      } else {
+        console.error(error);
+      }
+    }
+  };
+
+  const resolveProjectHandle = (
+    name: string,
+    handle?: ProjectFileHandle | null,
+  ) => {
+    if (handle) {
+      return handle;
+    }
+
+    return recentProjects.find((entry) => entry.name === name)?.handle ?? null;
+  };
+
+  const updateProjectMetadata = (
+    name: string,
+    handle?: ProjectFileHandle | null,
+  ) => {
+    projectHandleRef.current = handle ?? null;
+    setProjectName(name);
   };
 
   const applyScene = async (
@@ -103,10 +141,13 @@ export default function App() {
     name: string,
     handle?: ProjectFileHandle | null,
   ) => {
-    projectHandleRef.current = handle ?? null;
-    setProjectName(name);
+    updateProjectMetadata(name, handle);
     setScene(nextScene);
-    setActiveLayerId(nextScene.layers[0]?.id ?? "");
+    setActiveLayerId((currentActiveLayerId) =>
+      nextScene.layers.some((layer) => layer.id === currentActiveLayerId)
+        ? currentActiveLayerId
+        : (nextScene.layers[0]?.id ?? ""),
+    );
     await syncRecentProjects(name, serializeProject(nextScene), handle ?? null);
   };
 
@@ -238,14 +279,15 @@ export default function App() {
     handle?: ProjectFileHandle | null,
   ) => {
     try {
+      const resolvedHandle = resolveProjectHandle(name, handle);
       const nextScene = await loadProjectFromRecent({
         id: name,
         name,
         snapshot: text,
-        handle: handle ?? null,
+        handle: resolvedHandle,
         lastOpenedAt: Date.now(),
       });
-      await applyScene(nextScene, name, handle ?? null);
+      await applyScene(nextScene, name, resolvedHandle);
     } catch (error) {
       console.error(error);
       window.alert("プロジェクトファイルの読み込みに失敗しました。");
@@ -316,7 +358,8 @@ export default function App() {
         const writable = await currentHandle.createWritable();
         await writable.write(snapshot);
         await writable.close();
-        await applyScene(scene, currentHandle.name, currentHandle);
+        updateProjectMetadata(currentHandle.name, currentHandle);
+        await syncRecentProjects(currentHandle.name, snapshot, currentHandle);
         return;
       } catch {
         // Fall through to Save As.
@@ -362,7 +405,8 @@ export default function App() {
         const writable = await handle.createWritable();
         await writable.write(snapshot);
         await writable.close();
-        await applyScene(scene, handle.name, handle);
+        updateProjectMetadata(handle.name, handle);
+        await syncRecentProjects(handle.name, snapshot, handle);
         return;
       } catch {
         // Fall back to a download if picker save fails.
@@ -376,7 +420,8 @@ export default function App() {
     anchor.download = suggestedName;
     anchor.click();
     URL.revokeObjectURL(url);
-    await applyScene(scene, suggestedName, null);
+    updateProjectMetadata(suggestedName, null);
+    await syncRecentProjects(suggestedName, snapshot, null);
   };
 
   const handleRecentSelect = async (entry: RecentProjectEntry) => {

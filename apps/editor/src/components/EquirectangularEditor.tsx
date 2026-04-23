@@ -1,5 +1,9 @@
 import type { DragEvent, PointerEvent, WheelEvent } from "react";
-import { estimateLayerPreviewSize, screenPointToLatitudeLongitude } from "../lib/geometry";
+import {
+  estimateLayerPreviewSize,
+  screenPointToLatitudeLongitude,
+} from "../lib/geometry";
+import { resolveGuideImageUrl } from "../lib/guide-image";
 import type { StoryboardLayer } from "../lib/types";
 
 type Props = {
@@ -60,7 +64,10 @@ export function EquirectangularEditor({
     onUpdateLayer(layerId, { latitude, longitude });
   };
 
-  const handleLayerWheel = (event: WheelEvent<HTMLButtonElement>, layerId: string) => {
+  const handleLayerWheel = (
+    event: WheelEvent<HTMLButtonElement>,
+    layerId: string,
+  ) => {
     if (!interactive || layerId !== activeLayerId) {
       return;
     }
@@ -106,11 +113,17 @@ export function EquirectangularEditor({
       onDrop={handleDrop}
     >
       {backgroundImageUrl ? (
-        <img className="stage-image background-image" src={backgroundImageUrl} alt="" />
+        <img
+          className="stage-image background-image"
+          src={backgroundImageUrl}
+          alt=""
+        />
       ) : null}
-      {guideImageUrl ? (
-        <img className="stage-image guide-image" src={guideImageUrl} alt="" />
-      ) : null}
+      <img
+        className="stage-image guide-image"
+        src={resolveGuideImageUrl(guideImageUrl)}
+        alt=""
+      />
 
       {layers.map((layer) => {
         const size = estimateLayerPreviewSize(layer);
@@ -133,7 +146,12 @@ export function EquirectangularEditor({
             draggable={false}
             onPointerDown={(event) => handleLayerPointerDown(event, layer.id)}
             onPointerMove={(event) => handleLayerPointerMove(event, layer.id)}
-            onPointerUp={interactive ? (event) => event.currentTarget.releasePointerCapture(event.pointerId) : undefined}
+            onPointerUp={
+              interactive
+                ? (event) =>
+                    event.currentTarget.releasePointerCapture(event.pointerId)
+                : undefined
+            }
             onDragStart={(event) => event.preventDefault()}
             onWheel={(event) => handleLayerWheel(event, layer.id)}
             title={layer.name}
