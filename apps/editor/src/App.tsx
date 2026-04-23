@@ -3,7 +3,11 @@ import type { ChangeEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EquirectangularEditor } from "./components/EquirectangularEditor";
 import { ProjectionPreview } from "./components/ProjectionPreview";
-import { ThreePreview, type ThreePreviewHandle } from "./components/ThreePreview";
+import {
+  ThreePreview,
+  type ThreePreviewHandle,
+} from "./components/ThreePreview";
+import { loadSingleImageFile } from "./lib/image-file";
 import { addLayer, deleteLayer, setVec3Value, updateLayer } from "./lib/scene";
 import { defaultScene } from "./lib/defaultScene";
 import { serializeProject } from "./lib/project-file";
@@ -20,7 +24,9 @@ export default function App() {
   const [scene, setScene] = useState<StoryboardScene>(defaultScene);
   const [activeLayerId, setActiveLayerId] = useState(scene.layers[0]?.id ?? "");
   const [projectName, setProjectName] = useState("Untitled");
-  const [recentProjects, setRecentProjects] = useState<RecentProjectEntry[]>([]);
+  const [recentProjects, setRecentProjects] = useState<RecentProjectEntry[]>(
+    [],
+  );
   const [recentMenuOpen, setRecentMenuOpen] = useState(false);
   const [vrGuideVisible, setVrGuideVisible] = useState(true);
   const [scenePanelOpen, setScenePanelOpen] = useState(true);
@@ -34,7 +40,9 @@ export default function App() {
   const projectHandleRef = useRef<ProjectFileHandle | null>(null);
 
   const activeLayer = useMemo(
-    () => scene.layers.find((layer) => layer.id === activeLayerId) ?? scene.layers[0],
+    () =>
+      scene.layers.find((layer) => layer.id === activeLayerId) ??
+      scene.layers[0],
     [activeLayerId, scene.layers],
   );
 
@@ -62,7 +70,11 @@ export default function App() {
         setProjectName(latest.name);
         setScene(loadedScene);
         setActiveLayerId(loadedScene.layers[0]?.id ?? "");
-        await syncRecentProjects(latest.name, serializeProject(loadedScene), latest.handle ?? null);
+        await syncRecentProjects(
+          latest.name,
+          serializeProject(loadedScene),
+          latest.handle ?? null,
+        );
       } catch {
         // Ignore bootstrap errors and keep the default scene.
       }
@@ -73,7 +85,11 @@ export default function App() {
     };
   }, []);
 
-  const syncRecentProjects = async (name: string, snapshot: string, handle?: ProjectFileHandle | null) => {
+  const syncRecentProjects = async (
+    name: string,
+    snapshot: string,
+    handle?: ProjectFileHandle | null,
+  ) => {
     await upsertRecentProject({
       name,
       snapshot,
@@ -100,19 +116,18 @@ export default function App() {
       return;
     }
 
-    void (async () => {
-      try {
-        const image = await loadImageMetadata(file);
+    void loadSingleImageFile(
+      file,
+      (image) => {
         setScene((current) => ({
           ...current,
           guideImageUrl: image.url,
         }));
-        event.target.value = "";
-      } catch (error) {
-        console.error(error);
-        window.alert("ガイド画像の読み込みに失敗しました。");
-      }
-    })();
+      },
+      "ガイド画像の読み込みに失敗しました。",
+    ).finally(() => {
+      event.target.value = "";
+    });
   };
 
   const handleBackgroundFileLoad = (event: ChangeEvent<HTMLInputElement>) => {
@@ -121,19 +136,18 @@ export default function App() {
       return;
     }
 
-    void (async () => {
-      try {
-        const image = await loadImageMetadata(file);
+    void loadSingleImageFile(
+      file,
+      (image) => {
         setScene((current) => ({
           ...current,
           backgroundImageUrl: image.url,
         }));
-        event.target.value = "";
-      } catch (error) {
-        console.error(error);
-        window.alert("背景画像の読み込みに失敗しました。");
-      }
-    })();
+      },
+      "背景画像の読み込みに失敗しました。",
+    ).finally(() => {
+      event.target.value = "";
+    });
   };
 
   const handleLayerFileLoad =
@@ -142,21 +156,21 @@ export default function App() {
       if (!file) {
         return;
       }
-      try {
-        const image = await loadImageMetadata(file);
-
-        setScene((current) =>
-          updateLayer(current, layerId, {
-            imageUrl: image.url,
-            imageName: file.name,
-            imageAspect: image.aspect,
-          }),
-        );
+      void loadSingleImageFile(
+        file,
+        (image) => {
+          setScene((current) =>
+            updateLayer(current, layerId, {
+              imageUrl: image.url,
+              imageName: file.name,
+              imageAspect: image.aspect,
+            }),
+          );
+        },
+        "レイヤー画像の読み込みに失敗しました。",
+      ).finally(() => {
         event.target.value = "";
-      } catch (error) {
-        console.error(error);
-        window.alert("レイヤー画像の読み込みに失敗しました。");
-      }
+      });
     };
 
   const handleAddLayer = () => {
@@ -173,7 +187,9 @@ export default function App() {
 
   const handleDeleteLayer = (layerId: string) => {
     setScene((current) => {
-      const layerIndex = current.layers.findIndex((layer) => layer.id === layerId);
+      const layerIndex = current.layers.findIndex(
+        (layer) => layer.id === layerId,
+      );
       if (layerIndex < 0) {
         return current;
       }
@@ -183,16 +199,19 @@ export default function App() {
         return current;
       }
 
-      const nextActiveLayer = next.layers[layerIndex] ?? next.layers[layerIndex - 1] ?? next.layers[0];
+      const nextActiveLayer =
+        next.layers[layerIndex] ??
+        next.layers[layerIndex - 1] ??
+        next.layers[0];
       setActiveLayerId(nextActiveLayer?.id ?? "");
       return next;
     });
   };
 
   const handleDropImageFile = (file: File) => {
-    void (async () => {
-      try {
-        const image = await loadImageMetadata(file);
+    void loadSingleImageFile(
+      file,
+      (image) => {
         setScene((current) => {
           const next = addLayer(current);
           if (next === current) {
@@ -208,11 +227,9 @@ export default function App() {
             scale: getDefaultLayerScale(image.height),
           });
         });
-      } catch (error) {
-        console.error(error);
-        window.alert("画像の読み込みに失敗しました。");
-      }
-    })();
+      },
+      "画像の読み込みに失敗しました。",
+    );
   };
 
   const loadSceneFromFileText = async (
@@ -236,16 +253,18 @@ export default function App() {
   };
 
   const handleOpenProject = async () => {
-    const picker = (window as Window & {
-      showOpenFilePicker?: (options: {
-        multiple?: boolean;
-        types?: Array<{
-          description?: string;
-          accept: Record<string, string[]>;
-        }>;
-        excludeAcceptAllOption?: boolean;
-      }) => Promise<ProjectFileHandle[]>;
-    }).showOpenFilePicker;
+    const picker = (
+      window as Window & {
+        showOpenFilePicker?: (options: {
+          multiple?: boolean;
+          types?: Array<{
+            description?: string;
+            accept: Record<string, string[]>;
+          }>;
+          excludeAcceptAllOption?: boolean;
+        }) => Promise<ProjectFileHandle[]>;
+      }
+    ).showOpenFilePicker;
 
     if (picker) {
       try {
@@ -308,17 +327,21 @@ export default function App() {
   };
 
   const handleSaveProjectAs = async () => {
-    const suggestedName = projectName.endsWith(".json") ? projectName : `${projectName}.json`;
+    const suggestedName = projectName.endsWith(".json")
+      ? projectName
+      : `${projectName}.json`;
     const snapshot = serializeProject(scene);
-    const picker = (window as Window & {
-      showSaveFilePicker?: (options: {
-        suggestedName?: string;
-        types?: Array<{
-          description?: string;
-          accept: Record<string, string[]>;
-        }>;
-      }) => Promise<ProjectFileHandle>;
-    }).showSaveFilePicker;
+    const picker = (
+      window as Window & {
+        showSaveFilePicker?: (options: {
+          suggestedName?: string;
+          types?: Array<{
+            description?: string;
+            accept: Record<string, string[]>;
+          }>;
+        }) => Promise<ProjectFileHandle>;
+      }
+    ).showSaveFilePicker;
 
     if (picker) {
       try {
@@ -364,7 +387,11 @@ export default function App() {
       setScene(loadedScene);
       setActiveLayerId(loadedScene.layers[0]?.id ?? "");
       setRecentMenuOpen(false);
-      await syncRecentProjects(entry.name, serializeProject(loadedScene), entry.handle ?? null);
+      await syncRecentProjects(
+        entry.name,
+        serializeProject(loadedScene),
+        entry.handle ?? null,
+      );
     } catch (error) {
       console.error(error);
       window.alert("最近のファイルの読み込みに失敗しました。");
@@ -466,32 +493,44 @@ export default function App() {
           <button type="button" onClick={handleResetGuide}>
             ガイドをデフォルトへ戻す
           </button>
-          <button type="button" onClick={() => backgroundInputRef.current?.click()}>
+          <button
+            type="button"
+            onClick={() => backgroundInputRef.current?.click()}
+          >
             背景読み込み
           </button>
           <div className="project-controls">
-          <button type="button" onClick={handleOpenProject}>
-            Open
-          </button>
-          <button type="button" onClick={() => void handleSaveProject()}>
-            Save
+            <button type="button" onClick={handleOpenProject}>
+              Open
+            </button>
+            <button type="button" onClick={() => void handleSaveProject()}>
+              Save
             </button>
             <button type="button" onClick={() => void handleSaveProject(true)}>
               Save As
             </button>
-          <button type="button" onClick={() => setRecentMenuOpen((current) => !current)}>
-            Recent
-          </button>
-          <button
-            type="button"
-            onClick={() => window.location.assign(new URL("../viewer/", window.location.href).toString())}
-          >
-            Viewer
-          </button>
-          {recentMenuOpen ? (
-            <div className="recent-menu">
+            <button
+              type="button"
+              onClick={() => setRecentMenuOpen((current) => !current)}
+            >
+              Recent
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.location.assign(
+                  new URL("../viewer/", window.location.href).toString(),
+                )
+              }
+            >
+              Viewer
+            </button>
+            {recentMenuOpen ? (
+              <div className="recent-menu">
                 {recentProjects.length === 0 ? (
-                  <span className="recent-empty">最近のファイルはありません。</span>
+                  <span className="recent-empty">
+                    最近のファイルはありません。
+                  </span>
                 ) : (
                   recentProjects.map((entry) => (
                     <button
@@ -501,7 +540,9 @@ export default function App() {
                       onClick={() => void handleRecentSelect(entry)}
                     >
                       <strong>{entry.name}</strong>
-                      <small>{new Date(entry.lastOpenedAt).toLocaleString()}</small>
+                      <small>
+                        {new Date(entry.lastOpenedAt).toLocaleString()}
+                      </small>
                     </button>
                   ))
                 )}
@@ -522,13 +563,15 @@ export default function App() {
               <span className="pill">Interactive</span>
             </div>
 
-              <EquirectangularEditor
+            <EquirectangularEditor
               guideImageUrl={scene.guideImageUrl}
               backgroundImageUrl={scene.backgroundImageUrl}
               layers={scene.layers}
               activeLayerId={activeLayerId}
               onSelectLayer={setActiveLayerId}
-              onUpdateLayer={(id, patch) => setScene((current) => updateLayer(current, id, patch))}
+              onUpdateLayer={(id, patch) =>
+                setScene((current) => updateLayer(current, id, patch))
+              }
               onDropImageFile={handleDropImageFile}
               interactive
             />
@@ -548,9 +591,7 @@ export default function App() {
               <span className="pill">Rendered result</span>
             </div>
 
-            <ProjectionPreview
-              scene={scene}
-            />
+            <ProjectionPreview scene={scene} />
           </section>
         </div>
 
@@ -566,7 +607,9 @@ export default function App() {
               <input
                 type="number"
                 value={scene.dome.radius}
-                onChange={(event) => updateSceneDome("radius", 0, Number(event.target.value))}
+                onChange={(event) =>
+                  updateSceneDome("radius", 0, Number(event.target.value))
+                }
               />
             </label>
             <label>
@@ -578,7 +621,11 @@ export default function App() {
                     type="number"
                     value={value}
                     onChange={(event) =>
-                      updateSceneDome("scale", axis as 0 | 1 | 2, Number(event.target.value))
+                      updateSceneDome(
+                        "scale",
+                        axis as 0 | 1 | 2,
+                        Number(event.target.value),
+                      )
                     }
                   />
                 ))}
@@ -593,7 +640,11 @@ export default function App() {
                     type="number"
                     value={value}
                     onChange={(event) =>
-                      updateSceneDome("translate", axis as 0 | 1 | 2, Number(event.target.value))
+                      updateSceneDome(
+                        "translate",
+                        axis as 0 | 1 | 2,
+                        Number(event.target.value),
+                      )
                     }
                   />
                 ))}
@@ -607,7 +658,12 @@ export default function App() {
                     key={axis}
                     type="number"
                     value={value}
-                    onChange={(event) => updateSceneCamera(axis as 0 | 1 | 2, Number(event.target.value))}
+                    onChange={(event) =>
+                      updateSceneCamera(
+                        axis as 0 | 1 | 2,
+                        Number(event.target.value),
+                      )
+                    }
                   />
                 ))}
               </div>
@@ -620,14 +676,21 @@ export default function App() {
             open={layersPanelOpen}
             onToggle={() => setLayersPanelOpen((current) => !current)}
             action={
-              <button type="button" disabled={scene.layers.length >= 10} onClick={handleAddLayer}>
+              <button
+                type="button"
+                disabled={scene.layers.length >= 10}
+                onClick={handleAddLayer}
+              >
                 Add
               </button>
             }
           >
             <div className="layer-list">
               {scene.layers.map((layer) => (
-                <div key={layer.id} className={`layer-row-shell ${layer.id === activeLayerId ? "active" : ""}`}>
+                <div
+                  key={layer.id}
+                  className={`layer-row-shell ${layer.id === activeLayerId ? "active" : ""}`}
+                >
                   <button
                     type="button"
                     className="layer-row"
@@ -635,7 +698,8 @@ export default function App() {
                   >
                     <span>{layer.imageName ?? layer.name}</span>
                     <small>
-                      lat {layer.latitude.toFixed(1)} / lon {layer.longitude.toFixed(1)} / dist{" "}
+                      lat {layer.latitude.toFixed(1)} / lon{" "}
+                      {layer.longitude.toFixed(1)} / dist{" "}
                       {layer.distance.toFixed(1)}
                     </small>
                   </button>
@@ -680,7 +744,9 @@ export default function App() {
                     />
                     <button
                       type="button"
-                      onClick={() => layerInputRefs.current[activeLayer.id]?.click()}
+                      onClick={() =>
+                        layerInputRefs.current[activeLayer.id]?.click()
+                      }
                     >
                       Load
                     </button>
@@ -776,7 +842,7 @@ export default function App() {
           </CollapsiblePanel>
 
           <section className="panel">
-              <div className="panel-header">
+            <div className="panel-header">
               <div>
                 <h2>VR Preview</h2>
                 <p>Three.js の 3D プレビュー。</p>
@@ -812,32 +878,12 @@ export default function App() {
   );
 }
 
-async function loadImageMetadata(file: File) {
-  const url = await readFileAsDataUrl(file);
-  const image = new Image();
-  image.decoding = "async";
-  image.src = url;
-  await image.decode();
-  return {
-    url,
-    width: image.naturalWidth,
-    height: image.naturalHeight,
-    aspect: image.naturalWidth / image.naturalHeight,
-  };
-}
-
 function getDefaultLayerScale(imageHeight: number) {
   const referenceHeight = 1024;
-  return Math.max(0.25, Math.min(8, referenceHeight / Math.max(1, imageHeight)));
-}
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
+  return Math.max(
+    0.25,
+    Math.min(8, referenceHeight / Math.max(1, imageHeight)),
+  );
 }
 
 function CollapsiblePanel(props: {
@@ -849,20 +895,32 @@ function CollapsiblePanel(props: {
   children: ReactNode;
 }) {
   return (
-    <section className={`panel collapsible-panel ${props.open ? "open" : "closed"}`}>
+    <section
+      className={`panel collapsible-panel ${props.open ? "open" : "closed"}`}
+    >
       <div className="panel-header collapsible-header">
-        <button type="button" className="panel-header-button" onClick={props.onToggle}>
+        <button
+          type="button"
+          className="panel-header-button"
+          onClick={props.onToggle}
+        >
           <div className="panel-heading-copy">
-          <h2>
-            <span className="panel-disclosure">{props.open ? "▼ " : "▶ "}</span>
-            {props.title}
-          </h2>
-          <p>{props.description}</p>
+            <h2>
+              <span className="panel-disclosure">
+                {props.open ? "▼ " : "▶ "}
+              </span>
+              {props.title}
+            </h2>
+            <p>{props.description}</p>
           </div>
         </button>
-        {props.action ? <div className="panel-actions">{props.action}</div> : null}
+        {props.action ? (
+          <div className="panel-actions">{props.action}</div>
+        ) : null}
       </div>
-      {props.open ? <div className="collapsible-body">{props.children}</div> : null}
+      {props.open ? (
+        <div className="collapsible-body">{props.children}</div>
+      ) : null}
     </section>
   );
 }
@@ -914,7 +972,10 @@ function handleNumberLabelDrag(
   }
 
   const target = event.target;
-  if (target instanceof HTMLInputElement || target instanceof HTMLButtonElement) {
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLButtonElement
+  ) {
     return;
   }
 

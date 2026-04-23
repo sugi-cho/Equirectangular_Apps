@@ -1,5 +1,4 @@
 import { parseProject } from "./project-file";
-import type { StoryboardScene } from "./types";
 
 export type ProjectFileHandle = {
   name: string;
@@ -19,17 +18,16 @@ export type RecentProjectEntry = {
 };
 
 const DB_NAME = "equirectangular-editor";
-const DB_VERSION = 2;
+const DB_VERSION = 1;
 const STORE_NAME = "recent-projects";
-const DIRECTORY_STORE_NAME = "project-directory";
 
 export async function listRecentProjects() {
   const db = await openDatabase();
   const transaction = db.transaction(STORE_NAME, "readonly");
   const store = transaction.objectStore(STORE_NAME);
-  const entries = (await requestToPromise<RecentProjectEntry[]>(store.getAll())).sort(
-    (a, b) => b.lastOpenedAt - a.lastOpenedAt,
-  );
+  const entries = (
+    await requestToPromise<RecentProjectEntry[]>(store.getAll())
+  ).sort((a, b) => b.lastOpenedAt - a.lastOpenedAt);
   db.close();
   return entries;
 }
@@ -55,26 +53,6 @@ export async function upsertRecentProject(params: {
   return entry;
 }
 
-export async function saveProjectDirectoryHandle(handle: FileSystemDirectoryHandle | null) {
-  const db = await openDatabase();
-  const transaction = db.transaction(DIRECTORY_STORE_NAME, "readwrite");
-  const store = transaction.objectStore(DIRECTORY_STORE_NAME);
-  await requestToPromise(store.put({ id: "last-directory", handle }));
-  await transactionDone(transaction);
-  db.close();
-}
-
-export async function loadProjectDirectoryHandle() {
-  const db = await openDatabase();
-  const transaction = db.transaction(DIRECTORY_STORE_NAME, "readonly");
-  const store = transaction.objectStore(DIRECTORY_STORE_NAME);
-  const entry = await requestToPromise<{ id: string; handle: FileSystemDirectoryHandle | null } | undefined>(
-    store.get("last-directory"),
-  );
-  db.close();
-  return entry?.handle ?? null;
-}
-
 export async function loadProjectFromRecent(entry: RecentProjectEntry) {
   if (entry.handle) {
     try {
@@ -96,9 +74,6 @@ async function openDatabase() {
     if (!db.objectStoreNames.contains(STORE_NAME)) {
       db.createObjectStore(STORE_NAME, { keyPath: "id" });
     }
-    if (!db.objectStoreNames.contains(DIRECTORY_STORE_NAME)) {
-      db.createObjectStore(DIRECTORY_STORE_NAME, { keyPath: "id" });
-    }
   };
   return requestToPromise<IDBDatabase>(request);
 }
@@ -106,27 +81,17 @@ async function openDatabase() {
 function requestToPromise<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("IndexedDB request failed"));
+    request.onerror = () =>
+      reject(request.error ?? new Error("IndexedDB request failed"));
   });
 }
 
 function transactionDone(transaction: IDBTransaction) {
   return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("IndexedDB transaction failed"));
-    transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("IndexedDB transaction failed"));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
   });
-}
-
-export async function loadRecentProjectsSnapshot() {
-  const entries = await listRecentProjects();
-  if (entries.length === 0) {
-    return null;
-  }
-  const scene = await loadProjectFromRecent(entries[0]);
-  return { entry: entries[0], scene };
-}
-
-export function sceneFileNameFromProject(scene: StoryboardScene, fallback = "scene.json") {
-  return fallback;
 }
